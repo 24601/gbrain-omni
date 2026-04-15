@@ -8,6 +8,7 @@
  */
 
 import OpenAI from 'openai';
+import { loadConfig } from './config.ts';
 
 const MODEL = 'text-embedding-3-large';
 const DIMENSIONS = 1536;
@@ -21,7 +22,10 @@ let client: OpenAI | null = null;
 
 function getClient(): OpenAI {
   if (!client) {
-    client = new OpenAI();
+    const config = loadConfig();
+    client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || config?.openai_api_key,
+    });
   }
   return client;
 }
