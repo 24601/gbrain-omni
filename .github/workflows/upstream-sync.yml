@@ -1,0 +1,49 @@
+name: Upstream Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync master from upstream
+        env:
+          FORK_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/garrytan/gbrain.git
+          git fetch upstream master --prune
+          git checkout master
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse upstream/master)
+          echo "fork master:    $LOCAL"
+          echo "upstream master:$REMOTE"
+          if [ "$LOCAL" = "$REMOTE" ]; then
+            echo "Fork already up to date."
+            exit 0
+          fi
+          git reset --hard upstream/master
+          git push origin master
+
+      - name: Summary
+        run: |
+          echo "Upstream sync complete." >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: garrytan/gbrain@master" >> "$GITHUB_STEP_SUMMARY"
+          echo "Target: ${GITHUB_REPOSITORY}@master" >> "$GITHUB_STEP_SUMMARY"
