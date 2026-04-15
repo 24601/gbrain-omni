@@ -2,11 +2,14 @@ import type { BrainEngine } from '../core/engine.ts';
 import { loadConfig } from '../core/config.ts';
 
 function redactUrl(url: string): string {
-  // Redact password in postgresql:// URLs
-  return url.replace(
-    /(postgresql:\/\/[^:]+:)([^@]+)(@)/,
-    '$1***$3',
-  );
+  // Redact password in postgresql:// URLs, even if the password contains '@'
+  try {
+    const parsed = new URL(url);
+    if (parsed.password) parsed.password = '***';
+    return parsed.toString();
+  } catch {
+    return url.replace(/(postgresql:\/\/[^:]+:)(.*)(@[^@]+$)/, '$1***$3');
+  }
 }
 
 export async function runConfig(engine: BrainEngine, args: string[]) {
